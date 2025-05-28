@@ -1,31 +1,53 @@
+import gspread
+import json
+import os
 import streamlit as st
-from gsheets import add_contato, listar_contatos
+from google.oauth2.service_account import Credentials
 
-# Configuração inicial da página
-st.set_page_config(page_title="Agenda", layout="centered")
-st.title("📇 Agenda de Contatos (Google Sheets)")
+def get_client():
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
 
-# Formulário para adicionar contato
-with st.form("form_contato"):
-    nome = st.text_input("Nome")
-    email = st.text_input("Email")
-    enviar = st.form_submit_button("Salvar")
+    if 'GOOGLE_SHEETS_CREDENTIALS_JSON' in os.environ:
+        creds_dict = json.loads(os.getenv("GOOGLE_SHEETS_CREDENTIALS_JSON"))
+    else:
+        with open('credentials.json') as f:
+            creds_dict = json.load(f)
 
-    if enviar:
-        if nome and email:
-            add_contato(nome, email)
-            st.success("Contato salvo com sucesso!")
-        else:
-            st.warning("Preencha todos os campos.")
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    return gspread.authorize(creds)
 
-# Exibição da lista de contatos cadastrados
-st.subheader("📋 Contatos cadastrados")
-dados = listar_contatos()
+def get_sheet():
+    try:
+        client = get_client()
+        sheet = client.open("basecontatos").sheet1
+        return sheet
+    except Exception as e:
+        st.error(f"Erro ao acessar a planilha: {e}")
+        return None
 
-if dados:
-    for contato in dados:
-        nome = contato.get("nome", "Sem nome")
-        email = contato.get("email", "Sem email")
-        st.write(f"**{nome}** - {email}")
-else:
-    st.info("Nenhum contato cadastrado.")
+def inicializar_planilha():
+    sheet = get_sheet()
+    if sheet:
+        primeira_linha = sheet.row_values(1)
+        if not primeira_linha or primeira_linha != ["nome", "email"]:
+            sheet.clear()
+            sheet.append_row(["nome", "email"])
+
+def add_contato(nome, email):
+    inicializar_planilha()
+    sheet = get_sheet()
+    if sheet:
+        sheet.append_row([nome, email])
+
+def listar_contatos():
+    inicializar_planilha()
+    sheet = get_sheet()
+    if sheet:
+        try:
+            return sheet.get_all_records()
+        except:
+            return []
+    return []
