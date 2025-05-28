@@ -2,7 +2,7 @@ import gspread
 import json
 import os
 from google.oauth2.service_account import Credentials
-import streamlit as st  # necessário aqui para exibir erros
+import streamlit as st
 
 def get_client():
     scope = [
@@ -24,7 +24,6 @@ def get_sheet():
         client = get_client()
         sheet = client.open("basecontatos").sheet1
 
-        # Verifica se os títulos já existem
         dados = sheet.get_all_values()
         if not dados or dados[0] != ["nome", "email"]:
             sheet.clear()
@@ -35,17 +34,27 @@ def get_sheet():
         st.error(f"Erro ao acessar a planilha: {e}")
         return None
 
+def contato_existe(nome, email, registros):
+    for contato in registros:
+        if contato.get("nome", "").strip().lower() == nome.strip().lower() and \
+           contato.get("email", "").strip().lower() == email.strip().lower():
+            return True
+    return False
+
 def add_contato(nome, email):
     sheet = get_sheet()
     if sheet:
-        sheet.append_row([nome, email])
+        registros = sheet.get_all_records()
+        if contato_existe(nome, email, registros):
+            st.warning("Contato já existe na planilha.")
+        else:
+            sheet.append_row([nome, email])
 
 def listar_contatos():
     sheet = get_sheet()
     if sheet:
         try:
-            dados = sheet.get_all_records()
-            return dados
+            return sheet.get_all_records()
         except:
             return []
     return []
