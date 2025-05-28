@@ -4,7 +4,6 @@ from gsheets import add_contato, listar_contatos
 st.set_page_config(page_title="Agenda", layout="centered")
 st.title("📇 Agenda de Contatos (Google Sheets)")
 
-# Formulário de cadastro
 with st.form("form_contato"):
     nome = st.text_input("Nome")
     email = st.text_input("Email")
@@ -12,12 +11,14 @@ with st.form("form_contato"):
 
     if enviar:
         if nome and email:
-            add_contato(nome, email)
-            st.success("Contato salvo com sucesso!")
+            sucesso = add_contato(nome, email)
+            if sucesso:
+                st.success("Contato salvo com sucesso!")
+            else:
+                st.warning("Contato já existe na lista.")
         else:
             st.warning("Preencha todos os campos.")
 
-# Listagem de contatos
 st.subheader("📋 Contatos cadastrados")
 dados = listar_contatos()
 
