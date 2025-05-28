@@ -24,6 +24,8 @@ dados = listar_contatos()
 
 if dados:
     for contato in dados:
-        st.write(f"**{contato['nome']}** - {contato['email']}")
+        nome = contato.get("nome", "Sem nome")
+        email = contato.get("email", "Sem email")
+        st.write(f"**{nome}** - {email}")
 else:
     st.info("Nenhum contato cadastrado.")
