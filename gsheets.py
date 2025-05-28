@@ -1,10 +1,10 @@
 import gspread
 import json
 import os
-from google.oauth2.service_account import Credentials  # Atualizado para nova biblioteca
+import streamlit as st  # Faltava essa importação
+from google.oauth2.service_account import Credentials  # Biblioteca moderna para autenticação
 
 def get_client():
-    # Escopos atualizados para a API mais recente
     scope = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
@@ -12,10 +12,8 @@ def get_client():
     
     # Verifica se está no Streamlit Cloud ou local
     if 'GOOGLE_SHEETS_CREDENTIALS_JSON' in os.environ:
-        # Para produção no Streamlit Cloud
         creds_dict = json.loads(os.getenv("GOOGLE_SHEETS_CREDENTIALS_JSON"))
     else:
-        # Para desenvolvimento local (usando arquivo credentials.json)
         with open('credentials.json') as f:
             creds_dict = json.load(f)
     
@@ -34,13 +32,17 @@ def get_sheet():
 def add_contato(nome, email):
     sheet = get_sheet()
     if sheet:
-        sheet.append_row([nome, email])
+        try:
+            sheet.append_row([nome, email])
+        except Exception as e:
+            st.error(f"Erro ao adicionar contato: {e}")
 
 def listar_contatos():
     sheet = get_sheet()
     if sheet:
         try:
             return sheet.get_all_records()
-        except:
+        except Exception as e:
+            st.error(f"Erro ao listar contatos: {e}")
             return []
     return []
